@@ -889,10 +889,6 @@
 </div>
 
 
-function openUmrahDatabase(category) {
-  // category = employees | retired
-  window.location.href = `umrah_database.html?category=${category}`;
-}
 
 
           </div>
@@ -1236,185 +1232,95 @@ function openUmrahDatabase(category) {
     });
   }
 
-  function goToPage(serviceType, category) {
-    let link = '';
-   if (serviceType === 'العمرة') {
-
-  if (category === 'employees') {
-    link = 'employe_ins_omra.html';
+ function openUmrahDatabase(category) {
+    // employees | retired
+    window.location.href = `umrah_database.html?category=${category}`;
   }
 
-  else if (category === 'retired') {
-    link = 'retraite_ins_omra.html';
+function goToPage(serviceType, category) {
+  let link = '';
+
+  /* ================= العمرة ================= */
+  if (serviceType === 'العمرة') {
+
+    if (category === 'employees') {
+      link = 'employe_ins_omra.html';
+    } 
+    else if (category === 'retired') {
+      link = 'retraite_ins_omra.html';
+    } 
+    else if (category === 'database_employees') {
+      link = 'umrah_database.html?category=employees';
+    } 
+    else if (category === 'database_retired') {
+      link = 'umrah_database.html?category=retired';
+    }
+
   }
 
-  else if (category === 'database_employees') {
-    link = 'umrah_database.html?category=employees';
+  /* ================= الرحلات ================= */
+  else if (serviceType === 'الرحلات') {
+    link = (category === 'employees')
+      ? 'employe_ins_voyage.html'
+      : 'retraite_ins_voyage.html';
   }
 
-  else if (category === 'database_retired') {
-    link = 'umrah_database.html?category=retired';
+  /* ================= المخيمات ================= */
+  else if (serviceType === 'المخيمات') {
+    link = (category === 'employees')
+      ? 'employe_ins_coping.html'
+      : 'retraite_ins_coping.html';
+  }
+
+  /* ================= أبناء القطاع ================= */
+  else if (serviceType === 'أبناء القطاع') {
+    link = (category === 'employees')
+      ? 'employe_child_ins_voyage.html'
+      : 'retraite_child_ins_voyage.html';
+  }
+
+  /* ================= السلف الاجتماعية ================= */
+  else if (serviceType === 'السلف الإجتماعية') {
+
+    if (category === 'housing') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'تنبيه مهم - سلفة السكن',
+        html: document.querySelector('#housingAlertTemplate').innerHTML,
+        confirmButtonText: 'متابعة',
+        confirmButtonColor: '#1976d2',
+        allowOutsideClick: false
+      }).then(result => {
+        if (result.isConfirmed) {
+          window.location.href = 'credit_logement.html';
+        }
+      });
+      return;
+    }
+
+    if (category === 'exceptional') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'تنبيه مهم - السلفة الإستثنائية',
+        html: document.querySelector('#exceptionAlertTemplate').innerHTML,
+        confirmButtonText: 'متابعة',
+        confirmButtonColor: '#1976d2',
+        allowOutsideClick: false
+      }).then(result => {
+        if (result.isConfirmed) {
+          window.location.href = 'credit_exceptionel.html';
+        }
+      });
+      return;
+    }
+  }
+
+  /* ================= الانتقال ================= */
+  if (link) {
+    window.location.href = link;
   }
 }
 
-    } else if (serviceType === 'الرحلات') {
-      link = category === 'employees'
-        ? 'employe_ins_voyage.html'
-        : 'retraite_ins_voyage.html';
-    } else if (serviceType === 'المخيمات') {
-      link = category === 'employees'
-        ? 'employe_ins_coping.html'
-        : 'retraite_ins_coping.html';
-    } else if (serviceType === 'أبناء القطاع') {
-      link = category === 'employees'
-        ? 'employe_child_ins_voyage.html'
-        : 'retraite_child_ins_voyage.html';
-    } else if (serviceType === 'السلف الإجتماعية') {
-      if (category === 'housing') {
-        Swal.fire({
-          icon: 'warning',
-          title: 'تنبيه مهم - سلفة السكن',
-          html: `
-            <div class="housing-alert">
-              <div class="alert-header">
-                <div class="alert-icon">
-                  <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <div>
-                  <h4>تنبيه خاص بسلفة السكن</h4>
-                  <p>يرجى قراءة الشروط التالية بعناية قبل المتابعة</p>
-                </div>
-              </div>
-              <ul class="alert-points">
-                <li>
-                  <i class="fa-solid fa-circle-check"></i>
-                  سلفة السكن تُمنح مرة واحدة فقط خلال المسار المهني للموظف.
-                </li>
-                <li>
-                  <i class="fa-solid fa-user-slash"></i>
-                  يستبعد تلقائياً كل مترشح سبق له الاستفادة من هذه السلفة.
-                </li>
-                <li>
-                  <i class="fa-solid fa-circle-exclamation"></i>
-                  أي تصريح غير صحيح للمعلومات يعتبر إدلاءً بمعلومات مغلوطة ويترتب عنه الإقصاء الفوري ودون إنذار.
-                </li>
-              </ul>
-              <div class="alert-note">
-                <i class="fa-solid fa-shield"></i>
-                <span>الاطلاع على هذه الشروط شرط أساسي قبل المرور إلى استمارة التسجيل.</span>
-              </div>
-              <label class="acknowledge-box">
-                <input type="checkbox" id="housingAcknowledged">
-                <span>اطلعت عليه وأتحمل مسؤولية صحة المعلومات التي أصرح بها.</span>
-              </label>
-            </div>
-          `,
-          confirmButtonText: 'متابعة',
-          confirmButtonColor: '#1976d2',
-          allowOutsideClick: false,
-          allowEscapeKey: false,
-          focusConfirm: false,
-          customClass: {
-            confirmButton: 'cairo-btn highlight-confirm'
-          },
-          didOpen: () => {
-            const checkbox = Swal.getPopup().querySelector('#housingAcknowledged');
-            const confirmButton = Swal.getConfirmButton();
-            confirmButton.disabled = true;
-            checkbox.addEventListener('change', () => {
-              confirmButton.disabled = !checkbox.checked;
-            });
-          },
-          preConfirm: () => {
-            const checkbox = Swal.getPopup().querySelector('#housingAcknowledged');
-            if (!checkbox || !checkbox.checked) {
-              Swal.showValidationMessage('يجب تأكيد الاطلاع قبل المتابعة');
-              return false;
-            }
-            return true;
-          }
-        }).then(result => {
-          if (result.isConfirmed) {
-            window.location.href = 'credit_logement.html';
-          }
-        });
-        return;
-        return;
-      } else if (category === 'exceptional') {
-        Swal.fire({
-          icon: 'warning',
-          title: 'تنبيه مهم - السلفة الإستثنائية',
-          html: `
-            <div class="housing-alert">
-              <div class="alert-header">
-                <div class="alert-icon">
-                  <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-                <div>
-                  <h4>تنبيه خاص بالسلفة الإستثنائية</h4>
-                  <p>يرجى قراءة الشروط التالية بعناية قبل المتابعة</p>
-                </div>
-              </div>
-              <ul class="alert-points">
-                <li>
-                  <i class="fa-solid fa-circle-check"></i>
-                  السلفة الإستثنائية تمنح مرة واحدة كل (5) سنوات وفق شروط صارمة وبصفة محددة.
-                </li>
-                <li>
-                  <i class="fa-solid fa-user-slash"></i>
-                  يستبعد تلقائياً كل مترشح عليه دين في الخدمات الإجتماعية.
-                </li>
-                <li>
-                  <i class="fa-solid fa-circle-exclamation"></i>
-                  أي تصريح غير صحيح للمعلومات يعتبر إدلاءً بمعلومات مغلوطة ويترتب عنه الإقصاء الفوري ودون إنذار.
-                </li>
-              </ul>
-              <div class="alert-note">
-                <i class="fa-solid fa-shield"></i>
-                <span>الاطلاع على هذه الشروط شرط أساسي قبل المرور إلى استمارة التسجيل.</span>
-              </div>
-              <label class="acknowledge-box">
-                <input type="checkbox" id="exceptionAcknowledged">
-                <span>اطلعت عليه وأتحمل مسؤولية صحة المعلومات التي أصرح بها.</span>
-              </label>
-            </div>
-          `,
-          confirmButtonText: 'متابعة',
-          confirmButtonColor: '#1976d2',
-          allowOutsideClick: false,
-          allowEscapeKey: false,
-          focusConfirm: false,
-          customClass: {
-            confirmButton: 'cairo-btn highlight-confirm'
-          },
-          didOpen: () => {
-            const checkbox = Swal.getPopup().querySelector('#exceptionAcknowledged');
-            const confirmButton = Swal.getConfirmButton();
-            confirmButton.disabled = true;
-            checkbox.addEventListener('change', () => {
-              confirmButton.disabled = !checkbox.checked;
-            });
-          },
-          preConfirm: () => {
-            const checkbox = Swal.getPopup().querySelector('#exceptionAcknowledged');
-            if (!checkbox || !checkbox.checked) {
-              Swal.showValidationMessage('يجب تأكيد الاطلاع قبل المتابعة');
-              return false;
-            }
-            return true;
-          }
-        }).then(result => {
-          if (result.isConfirmed) {
-            window.location.href = 'credit_exceptionel.html'; // رابط السلفة الإستثنائية
-          }
-        });
-        return;
-      }
-    }
-    if (link) {
-      window.location.href = link;
-    }
-  }
 </script>
 
 <style>

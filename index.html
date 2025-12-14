@@ -15,6 +15,18 @@
 
 
   <style>
+
+.icon-btn.database {
+  background: #ede7f6;
+  border: 2px solid #673ab7;
+  color: #4527a0;
+}
+.icon-btn.database:hover {
+  background: #673ab7;
+  color: white;
+}
+
+
     body {
       font-family: 'Cairo', sans-serif;
       margin: 0;
@@ -864,6 +876,25 @@
               <i class="fa-solid fa-user-group"></i>
               <span>المتقاعدون والأرامل</span>
             </div>
+
+<div class="icon-btn database" onclick="openUmrahDatabase('employees')">
+  <i class="fa-solid fa-database"></i>
+  <span>قاعدة البيانات موظفين</span>
+</div>
+
+
+<div class="icon-btn database" onclick="openUmrahDatabase('retired')">
+  <i class="fa-solid fa-database"></i>
+  <span>قاعدة البيانات متقاعدين</span>
+</div>
+
+
+function openUmrahDatabase(category) {
+  // category = employees | retired
+  window.location.href = `umrah_database.html?category=${category}`;
+}
+
+
           </div>
         `,
         showConfirmButton: false
@@ -1207,10 +1238,25 @@
 
   function goToPage(serviceType, category) {
     let link = '';
-    if (serviceType === 'العمرة') {
-      link = category === 'employees'
-        ? 'employe_ins_omra.html'
-        : 'retraite_ins_omra.html';
+   if (serviceType === 'العمرة') {
+
+  if (category === 'employees') {
+    link = 'employe_ins_omra.html';
+  }
+
+  else if (category === 'retired') {
+    link = 'retraite_ins_omra.html';
+  }
+
+  else if (category === 'database_employees') {
+    link = 'umrah_database.html?category=employees';
+  }
+
+  else if (category === 'database_retired') {
+    link = 'umrah_database.html?category=retired';
+  }
+}
+
     } else if (serviceType === 'الرحلات') {
       link = category === 'employees'
         ? 'employe_ins_voyage.html'

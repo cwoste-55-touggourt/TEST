@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>قاعدة بيانات العمرة</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+body {
+  font-family: 'Cairo', sans-serif;
+  background: #f4f6fb;
+  padding: 20px;
+  margin: 0;
+}
+
+header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+h2 {
+  margin: 0;
+  color: #0d47a1;
+}
+
+input {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-family: Cairo;
+  width: 300px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+th {
+  background: #1976d2;
+  color: white;
+  padding: 12px;
+  font-size: 14px;
+}
+
+td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+
+tr:hover {
+  background: #e3f2fd;
+}
+
+.actions button {
+  border: none;
+  padding: 6px 8px;
+  margin: 2px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.edit { background: #ffca28; }
+.delete { background: #ef5350; color: white; }
+.print { background: #42a5f5; color: white; }
+
+.back-btn {
+  background: #607d8b;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h2 id="pageTitle">قاعدة بيانات العمرة</h2>
+  <input id="searchInput" placeholder="بحث بالرقم الوظيفي، الاسم أو اللقب">
+  <button class="back-btn" onclick="history.back()">⬅️ رجوع</button>
+</header>
+
+<table>
+<thead>
+<tr>
+  <th>الرقم الوظيفي</th>
+  <th>اللقب و الاسم</th>
+  <th>الوظيفة</th>
+  <th>مكان العمل</th>
+  <th>الدائرة</th>
+  <th>البلدية</th>
+  <th>الهاتف</th>
+  <th>تاريخ التسجيل</th>
+  <th>إجراءات</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+
+<script>
+/* 🔹 إعدادات أساسية */
+const API_URL = "https://script.google.com/macros/s/AKfycbwU0-gm9N288jc7KUt--JcHP8K_i5L_Y4l-kKlPxlpHFp2WxJzcqClwn0yBf9jrMlZF1Q/exec";
+
+const params = new URLSearchParams(window.location.search);
+const category = params.get("category");
+
+const SHEET_NAME =
+  category === "employees"
+    ? "عمرة_موظفين"
+    : "عمرة_متقاعدين_أرامل";
+
+document.getElementById("pageTitle").innerText =
+  "قاعدة بيانات العمرة – " +
+  (category === "employees" ? "الموظفون" : "المتقاعدون والأرامل");
+
+/* 🔹 جلب البيانات */
+fetch(`${API_URL}?sheet=${encodeURIComponent(SHEET_NAME)}`)
+  .then(res => res.json())
+  .then(data => renderTable(data));
+
+/* 🔹 عرض الجدول */
+function renderTable(data) {
+  let html = "";
+  data.slice(1).forEach((r, i) => {
+    html += `
+      <tr>
+        <td>${r[0] || ""}</td>
+        <td>${r[1] || ""}</td>
+        <td>${r[2] || ""}</td>
+        <td>${r[3] || ""}</td>
+        <td>${r[4] || ""}</td>
+        <td>${r[5] || ""}</td>
+        <td>${r[6] || ""}</td>
+        <td>${r[7] || ""}</td>
+        <td class="actions">
+          <button class="edit" onclick="editRow(${i+2})">✏️</button>
+          <button class="delete" onclick="deleteRow(${i+2})">🗑️</button>
+          <button class="print" onclick="printReceipt(${i+2})">🧾</button>
+        </td>
+      </tr>
+    `;
+  });
+  document.getElementById("tableBody").innerHTML = html;
+}
+
+/* 🔍 البحث */
+document.getElementById("searchInput").addEventListener("keyup", function () {
+  const v = this.value.toLowerCase();
+  document.querySelectorAll("#tableBody tr").forEach(tr => {
+    tr.style.display = tr.innerText.toLowerCase().includes(v) ? "" : "none";
+  });
+});
+
+/* ✏️ تعديل (سيُربط لاحقًا بـ Apps Script) */
+function editRow(row) {
+  alert("✏️ تعديل الصف رقم: " + row);
+}
+
+/* 🗑️ حذف (سيُربط لاحقًا بـ Apps Script) */
+function deleteRow(row) {
+  if (confirm("هل أنت متأكد من حذف هذا التسجيل؟")) {
+    alert("🗑️ حذف الصف رقم: " + row);
+  }
+}
+
+/* 🧾 وصل */
+function printReceipt(row) {
+  alert("🧾 استخراج وصل للصف رقم: " + row);
+}
+</script>
+
+</body>
+</html>

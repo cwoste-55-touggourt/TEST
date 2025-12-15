@@ -44,6 +44,13 @@ button {
   border-radius: 10px;
   cursor: pointer;
   font-family: Cairo;
+  transition: transform 0.08s ease, box-shadow 0.12s ease;
+}
+
+button:active,
+.actions button:active {
+  transform: scale(0.97);
+  box-shadow: 0 0 0 3px rgba(25,118,210,0.15);
 }
 
 .add-btn { background: #1976d2; color: white; }
@@ -62,10 +69,18 @@ button {
   border-radius: 12px;
   border: 1px solid #cfd8dc;
   padding: 10px 12px;
+  text-align: center;
 }
 .swal2-input:focus {
   border-color: #1976d2;
   box-shadow: 0 0 0 3px rgba(25,118,210,0.15);
+}
+.swal2-label {
+  display: block;
+  margin: 6px 12px 2px;
+  font-size: 13px;
+  color: #0d47a1;
+  text-align: right;
 }
 
 .table-wrap { overflow-x: auto; }
@@ -331,12 +346,18 @@ window.openForm = (id=null) => {
   const d = id ? CACHE.get(id) : {};
   Swal.fire({
     title: id ? "تعديل بيانات الموظف" : "إضافة موظف جديد",
-    html: `
-      <input id="fid" class="swal2-input" placeholder="الرقم الوطني (16 رقم)" value="${id||""}" ${id?"disabled":""}>
+        html: `
+      <label class="swal2-label" for="fid">الرقم الوطني (16 رقم)</label>
+      <input id="fid" class="swal2-input" placeholder="الرقم الوطني" value="${id||""}" ${id?"disabled":""}>
+      <label class="swal2-label" for="fname">الاسم الكامل</label>
       <input id="fname" class="swal2-input" placeholder="الاسم الكامل" value="${d?.name||""}">
+      <label class="swal2-label" for="fdiz">تاريخ الازدياد</label>
       <input id="fdiz" type="date" class="swal2-input" value="${fmt(d?.diz)}">
+      <label class="swal2-label" for="fdtw">تاريخ التوظيف</label>
       <input id="fdtw" type="date" class="swal2-input" value="${fmt(d?.dtw)}">
+      <label class="swal2-label" for="fgrade">الرتبة</label>
       <input id="fgrade" class="swal2-input" placeholder="الرتبة" value="${d?.grade||""}">
+      <label class="swal2-label" for="fplace">مكان العمل</label>
       <input id="fplace" class="swal2-input" placeholder="مكان العمل" value="${d?.place||""}">
     `,
     preConfirm: async () => {
@@ -347,7 +368,7 @@ window.openForm = (id=null) => {
       const fgradeEl = document.getElementById("fgrade");
       const fplaceEl = document.getElementById("fplace");
 
-      if (!/^\d{16}$/.test(fid)) return Swal.showValidationMessage("الرقم الوطني يجب أن يكون 16 رقماً");
+      if (!/^\d{16}$/.test\(fid\)) return Swal.showValidationMessage("الرقم الوطني يجب أن يكون 16 رقماً");
       if (!id && CACHE.has(fid)) return Swal.showValidationMessage("الموظف موجود بالفعل");
 
       const data = {
@@ -395,7 +416,7 @@ window.removeEmp = async id => {
     await deleteDoc(doc(db,"employeescom",id));
     CACHE.delete(id);
     removeRowDom(id);
-    Swal.fire("تم الحذف","تم حذف الموظف بنجاح","success");
+    Swal.fire("تم الحفظ","تم حفظ بيانات الموظف بنجاح","success");
   } catch (err) {
     console.error('Delete error', err);
     Swal.fire('خطأ','حدث خطأ أثناء الحذف: ' + (err.message || err),'error');
@@ -407,4 +428,9 @@ window.removeEmp = async id => {
 
 </body>
 </html>
+
+
+
+
+
 

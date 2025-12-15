@@ -161,7 +161,24 @@ const showLoading = () => { if (loading) { loading.style.display = "flex"; loadi
 const hideLoading = () => { if (loading) { loading.style.display = "none"; loading.setAttribute('aria-hidden','true'); } };
 
 /* 📅 */
-const fmt = d => d ? new Date(d).toISOString().slice(0,10) : "";
+// Format date-like values safely for input[type=date] / display.
+// Accepts: null/undefined -> "", ISO string, timestamp number, or Firestore Timestamp (has toDate()).
+const fmt = v => {
+  if (!v && v !== 0) return "";
+  try {
+    let dt;
+    if (typeof v === 'object' && v !== null && typeof v.toDate === 'function') {
+      dt = v.toDate();
+    } else {
+      dt = new Date(v);
+    }
+    if (!isFinite(dt.getTime())) return "";
+    return dt.toISOString().slice(0,10);
+  } catch (e) {
+    console.warn('fmt: invalid date value', v, e);
+    return "";
+  }
+};
 
 /* 🚀 Load once */
 async function init() {

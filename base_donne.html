@@ -4,147 +4,117 @@
 <meta charset="UTF-8">
 <title>قاعدة بيانات الموظفين</title>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
 body {
-  font-family: Cairo, sans-serif;
+  font-family: Cairo;
   background: #f4f6fb;
   margin: 0;
   padding: 20px;
 }
 
-/* ===== Header ===== */
 header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 h2 { color: #0d47a1; margin: 0; }
 
-.stats {
-  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-  padding: 10px 18px;
-  border-radius: 14px;
-  font-weight: bold;
-  color: #0d47a1;
-}
-
-input.search {
-  padding: 10px 14px;
-  border-radius: 12px;
+input {
+  padding: 10px;
+  border-radius: 10px;
   border: 1px solid #ccc;
   font-family: Cairo;
-  width: 260px;
 }
 
 button {
-  padding: 10px 16px;
-  border-radius: 12px;
   border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
   cursor: pointer;
   font-family: Cairo;
-  font-weight: 700;
 }
 
-.add { background: linear-gradient(135deg, #1976d2, #42a5f5); color: white; }
-.edit { background: #ffca28; }
-.delete { background: #ef5350; color: white; }
+.add-btn { background: #1976d2; color: white; }
+.back-btn { background: #607d8b; color: white; }
 
-/* ===== Table ===== */
+.stats {
+  margin: 15px 0;
+  font-weight: bold;
+  color: #333;
+}
+
 table {
   width: 100%;
-  border-collapse: collapse;
   background: white;
-  border-radius: 16px;
+  border-collapse: collapse;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
 }
 
 th {
   background: #1976d2;
   color: white;
-  padding: 14px;
+  padding: 12px;
 }
 
 td {
-  padding: 12px;
+  padding: 10px;
   border-bottom: 1px solid #eee;
-  font-size: 14px;
 }
 
 tr:hover { background: #e3f2fd; }
-.actions button { margin: 2px; }
 
-/* ===== Loading (فقط للتحميل العام) ===== */
+.actions button {
+  margin: 2px;
+  font-size: 14px;
+}
+
+.edit { background: #ffca28; }
+.delete { background: #ef5350; color: white; }
+
 #loading {
   position: fixed;
   inset: 0;
   background: rgba(255,255,255,0.9);
-  display: flex;
+  display: none;
   justify-content: center;
   align-items: center;
   z-index: 9999;
 }
 
-.loader {
-  text-align: center;
-  color: #1976d2;
-  font-weight: bold;
-}
-
 .spinner {
-  width: 64px;
-  height: 64px;
+  width: 60px;
+  height: 60px;
   border: 6px solid #e3f2fd;
   border-top: 6px solid #1976d2;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: auto;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ===== SweetAlert Form ===== */
-.swal-form {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.swal-form input {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  font-family: Cairo;
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 
 <body>
 
-<!-- Loading -->
-<div id="loading">
-  <div class="loader">
-    <div class="spinner"></div>
-    <p>جاري تحميل البيانات...</p>
-  </div>
-</div>
+<div id="loading"><div class="spinner"></div></div>
 
 <header>
-  <h2>قاعدة بيانات الموظفين</h2>
-  <div class="stats">👥 العدد الكلي: <span id="totalCount">0</span></div>
-  <input id="searchInput" class="search" placeholder="بحث...">
-  <button class="add" onclick="openForm()">➕ إضافة موظف</button>
+  <h2>📂 قاعدة بيانات الموظفين</h2>
+  <input id="search" placeholder="🔍 بحث">
+  <button class="add-btn" onclick="openForm()">➕ إضافة موظف</button>
+  <button class="back-btn" onclick="history.back()">⬅️ رجوع</button>
 </header>
+
+<div class="stats">👥 عدد الموظفين: <span id="count">0</span></div>
 
 <table>
 <thead>
@@ -158,157 +128,129 @@ tr:hover { background: #e3f2fd; }
   <th>إجراءات</th>
 </tr>
 </thead>
-<tbody id="tableBody"></tbody>
+<tbody id="tbody"></tbody>
 </table>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getFirestore, collection, getDocs,
-  setDoc, updateDoc, deleteDoc,
-  doc, getDoc
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-/* Firebase */
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, getDocs, doc, setDoc, updateDoc, deleteDoc } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* 🔥 Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyAkQz9pB2ZNlYIvdlTRvi4try3D8LLXS4g",
   authDomain: "databaseemploye.firebaseapp.com",
-  projectId: "databaseemploye"
+  projectId: "databaseemploye",
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const tbody = document.getElementById("tableBody");
+/* 🚀 Cache */
+const CACHE = new Map();
+const tbody = document.getElementById("tbody");
+const count = document.getElementById("count");
 const loading = document.getElementById("loading");
-const totalCount = document.getElementById("totalCount");
 
-/* ===== أدوات ===== */
-function formatDate(value) {
-  if (!value) return "";
-  if (value.seconds) value = new Date(value.seconds * 1000);
-  const d = new Date(value);
-  return isNaN(d) ? "" :
-    `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-}
+/* ⏳ */
+const showLoading = () => loading.style.display = "flex";
+const hideLoading = () => loading.style.display = "none";
 
-/* ===== تحميل البيانات ===== */
-async function loadData() {
-  const snap = await getDocs(collection(db, "employeescom"));
+/* 📅 */
+const fmt = d => d ? new Date(d).toISOString().slice(0,10) : "";
+
+/* 🚀 Load once */
+showLoading();
+const snap = await getDocs(collection(db, "employeescom"));
+snap.forEach(docu => CACHE.set(docu.id, docu.data()));
+render();
+hideLoading();
+
+/* 🧱 Render */
+function render() {
+  const frag = document.createDocumentFragment();
   tbody.innerHTML = "";
-  totalCount.textContent = snap.size;
 
-  snap.forEach(docu => {
-    const d = docu.data();
+  CACHE.forEach((d,id) => {
     const tr = document.createElement("tr");
+    tr.dataset.search = `${id} ${d.name} ${d.grade} ${d.place}`.toLowerCase();
     tr.innerHTML = `
-      <td>${docu.id}</td>
+      <td>${id}</td>
       <td>${d.name}</td>
-      <td>${formatDate(d.diz)}</td>
-      <td>${formatDate(d.dtw)}</td>
+      <td>${fmt(d.diz)}</td>
+      <td>${fmt(d.dtw)}</td>
       <td>${d.grade}</td>
       <td>${d.place}</td>
       <td class="actions">
-        <button class="edit" onclick="openForm('${docu.id}')">✏️</button>
-        <button class="delete" onclick="removeEmp('${docu.id}')">🗑️</button>
+        <button class="edit" onclick="openForm('${id}')">✏️</button>
+        <button class="delete" onclick="removeEmp('${id}')">🗑️</button>
       </td>`;
-    tbody.appendChild(tr);
+    frag.appendChild(tr);
   });
 
-  loading.style.display = "none";
+  tbody.appendChild(frag);
+  count.textContent = CACHE.size;
 }
 
-loadData();
-
-/* ===== البحث ===== */
-document.getElementById("searchInput").addEventListener("keyup", e => {
+/* 🔍 Search */
+document.getElementById("search").oninput = e => {
   const v = e.target.value.toLowerCase();
-  document.querySelectorAll("#tableBody tr").forEach(tr => {
-    tr.style.display = tr.innerText.toLowerCase().includes(v) ? "" : "none";
+  tbody.querySelectorAll("tr").forEach(tr => {
+    tr.style.display = tr.dataset.search.includes(v) ? "" : "none";
   });
-});
+};
 
-/* ===== استمارة أنيقة ===== */
-window.openForm = async (id = null) => {
-  let data = { name:"", diz:"", dtw:"", grade:"", place:"" };
-
-  if (id) {
-    const snap = await getDoc(doc(db,"employeescom",id));
-    data = snap.data();
-  }
-
-  const result = await Swal.fire({
+/* ➕✏️ Form */
+window.openForm = (id=null) => {
+  const d = id ? CACHE.get(id) : {};
+  Swal.fire({
     title: id ? "✏️ تعديل موظف" : "➕ إضافة موظف",
     html: `
-      <div class="swal-form">
-        <input id="fid" placeholder="رقم التعريف (16 رقم)" ${id?"disabled":""} value="${id||""}">
-        <input id="fname" placeholder="الاسم الكامل" value="${data.name||""}">
-        <input id="fdiz" type="date" value="${formatDate(data.diz)}">
-        <input id="fdtw" type="date" value="${formatDate(data.dtw)}">
-        <input id="fgrade" placeholder="الرتبة" value="${data.grade||""}">
-        <input id="fplace" placeholder="مكان العمل" value="${data.place||""}">
-      </div>
+      <input id="fid" class="swal2-input" placeholder="رقم التعريف (16 رقم)" value="${id||""}" ${id?"disabled":""}>
+      <input id="fname" class="swal2-input" placeholder="الاسم" value="${d.name||""}">
+      <input id="fdiz" type="date" class="swal2-input" value="${fmt(d.diz)}">
+      <input id="fdtw" type="date" class="swal2-input" value="${fmt(d.dtw)}">
+      <input id="fgrade" class="swal2-input" placeholder="الرتبة" value="${d.grade||""}">
+      <input id="fplace" class="swal2-input" placeholder="مكان العمل" value="${d.place||""}">
     `,
-    showCancelButton: true,
-    confirmButtonText: id ? "حفظ التعديل" : "إضافة",
-    cancelButtonText: "إلغاء",
-    showLoaderOnConfirm: true,
     preConfirm: async () => {
-      const empId = fid.value.trim();
-      if (!id && !/^\d{16}$/.test(empId)) {
-        Swal.showValidationMessage("رقم التعريف يجب أن يكون 16 رقمًا");
-        return false;
-      }
-      if (!id) {
-        const exists = await getDoc(doc(db,"employeescom",empId));
-        if (exists.exists()) {
-          Swal.showValidationMessage("الموظف مسجل مسبقًا");
-          return false;
-        }
-      }
-      return {
-        empId,
+      const fid = document.getElementById("fid").value;
+      if (!/^\d{16}$/.test(fid)) return Swal.showValidationMessage("رقم التعريف يجب 16 رقم");
+
+      if (!id && CACHE.has(fid)) return Swal.showValidationMessage("⚠️ رقم موجود");
+
+      const data = {
+        id: fid,
         name: fname.value,
         diz: fdiz.value,
         dtw: fdtw.value,
         grade: fgrade.value,
         place: fplace.value
       };
+
+      showLoading();
+      id ? await updateDoc(doc(db,"employeescom",id),data)
+         : await setDoc(doc(db,"employeescom",fid),data);
+
+      CACHE.set(fid,data);
+      render();
+      hideLoading();
+      Swal.fire("✅ تم الحفظ","تمت العملية بنجاح","success");
     }
   });
-
-  if (!result.value) return;
-
-  if (id) {
-    await updateDoc(doc(db,"employeescom",id), result.value);
-    Swal.fire("تم التعديل ✅","تم تحديث بيانات الموظف","success");
-  } else {
-    await setDoc(doc(db,"employeescom",result.value.empId), {
-      id: result.value.empId,
-      ...result.value
-    });
-    Swal.fire("تمت الإضافة 🎉","تم تسجيل الموظف بنجاح","success");
-  }
-
-  await loadData();
 };
 
-/* ===== حذف ===== */
-window.removeEmp = async (id) => {
-  const ok = await Swal.fire({
-    icon: "warning",
-    title: "تأكيد الحذف",
-    text: "هل أنت متأكد من حذف هذا الموظف؟",
-    showCancelButton: true,
-    confirmButtonText: "حذف",
-    cancelButtonText: "إلغاء"
-  });
-
-  if (!ok.isConfirmed) return;
-
+/* 🗑️ Delete */
+window.removeEmp = async id => {
+  if (!await Swal.fire({title:"حذف؟",icon:"warning",showCancelButton:true}).then(r=>r.isConfirmed)) return;
+  showLoading();
   await deleteDoc(doc(db,"employeescom",id));
-  Swal.fire("تم الحذف 🗑️","تم حذف الموظف بنجاح","success");
-  await loadData();
+  CACHE.delete(id);
+  render();
+  hideLoading();
+  Swal.fire("🗑️ تم الحذف","تم حذف الموظف","success");
 };
 </script>
 

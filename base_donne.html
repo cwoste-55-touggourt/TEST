@@ -32,6 +32,11 @@ input {
   border: 1px solid #ccc;
   font-family: Cairo;
 }
+.search-input {
+  min-width: 300px;
+  flex: 1 1 380px;
+  max-width: 520px;
+}
 
 button {
   border: none;
@@ -72,6 +77,7 @@ table {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  table-layout: fixed;
 }
 
 th {
@@ -125,7 +131,7 @@ tr:hover { background: #e3f2fd; }
 
 <header>
   <h2>قاعدة بيانات الموظفين</h2>
-  <input id="search" placeholder="ابحث عن موظف...">
+  <input id="search" class="search-input" placeholder="ابحث عن موظف...">
   <button class="add-btn" onclick="openForm()">إضافة موظف جديد</button>
   <button class="back-btn" onclick="history.back()">رجوع</button>
 </header>
@@ -196,7 +202,7 @@ const fmt = v => {
 };
 
 /* أدوات مساعدة */
-const debounce = (fn, delay = 350) => {
+const debounce = (fn, delay = 250) => {
   let t;
   return (...args) => {
     clearTimeout(t);
@@ -236,33 +242,23 @@ const rowMarkup = (id, d) => {
 
 let rowCache = [];
 let currentFilter = "";
-let filterRaf = null;
 const syncRowCache = () => { rowCache = Array.from(tbody.rows); };
 
 const runFilter = term => {
   currentFilter = term;
   const q = term.trim().toLowerCase();
-  if (filterRaf) cancelAnimationFrame(filterRaf);
   if (!rowCache.length) return;
   if (!q) {
     rowCache.forEach(tr => tr.classList.remove('hidden-row'));
     return;
   }
-  let i = 0;
-  const len = rowCache.length;
-  const step = () => {
-    const limit = Math.min(i + 250, len);
-    for (; i < limit; i++) {
-      const tr = rowCache[i];
-      const match = (tr.dataset.search || "").includes(q);
-      tr.classList.toggle('hidden-row', !match);
-    }
-    if (i < len) filterRaf = requestAnimationFrame(step);
-  };
-  filterRaf = requestAnimationFrame(step);
+  rowCache.forEach(tr => {
+    const match = (tr.dataset.search || "").includes(q);
+    tr.classList.toggle('hidden-row', !match);
+  });
 };
 
-const scheduleFilter = debounce(v => runFilter(v), 350);
+const scheduleFilter = debounce(v => runFilter(v), 250);
 if (searchInput) {
   searchInput.addEventListener("input", e => scheduleFilter(e.target.value || ""));
 }
@@ -411,3 +407,4 @@ window.removeEmp = async id => {
 
 </body>
 </html>
+

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>قاعدة بيانات الموظفين</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+body {
+  font-family: Cairo, sans-serif;
+  background: #f4f6fb;
+  margin: 0;
+  padding: 20px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+h2 { color: #0d47a1; margin: 0; }
+
+button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-family: Cairo;
+  font-weight: 600;
+}
+
+.add { background: #1976d2; color: white; }
+.edit { background: #ffca28; }
+.delete { background: #ef5350; color: white; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0,0,0,.1);
+}
+
+th {
+  background: #1976d2;
+  color: white;
+  padding: 12px;
+}
+
+td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+
+tr:hover { background: #e3f2fd; }
+
+.actions button {
+  margin: 2px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h2>قاعدة بيانات الموظفين</h2>
+  <button class="add" onclick="openAdd()">➕ إضافة موظف</button>
+</header>
+
+<table>
+<thead>
+<tr>
+  <th>رقم التعريف</th>
+  <th>رقم التعريف الوظيفي</th>
+  <th>الاسم</th>
+  <th>تاريخ الازدياد</th>
+  <th>تاريخ التوظيف</th>
+  <th>الرتبة</th>
+  <th>مكان العمل</th>
+  <th>إجراءات</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  doc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+/* 🔥 إعدادات Firebase */
+const firebaseConfig = {
+  apiKey: "AIzaSyAkQz9pB2ZNlYIvdlTRvi4try3D8LLXS4g",
+  authDomain: "databaseemploye.firebaseapp.com",
+  projectId: "databaseemploye"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const tbody = document.getElementById("tableBody");
+
+/* ===== تحميل البيانات ===== */
+async function loadData() {
+  tbody.innerHTML = "";
+  const snap = await getDocs(collection(db, "employeescom"));
+
+  snap.forEach(docu => {
+    const d = docu.data();
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${docu.id}</td>
+      <td>${d.id || ""}</td>
+      <td>${d.name || ""}</td>
+      <td>${d.diz || ""}</td>
+      <td>${d.dtw || ""}</td>
+      <td>${d.grade || ""}</td>
+      <td>${d.place || ""}</td>
+      <td class="actions">
+        <button class="edit" onclick="editEmp('${docu.id}')">✏️</button>
+        <button class="delete" onclick="delEmp('${docu.id}')">🗑️</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+loadData();
+
+/* ===== إضافة ===== */
+window.openAdd = async () => {
+  const id = prompt("رقم التعريف (سيكون ID):");
+  if (!id) return;
+
+  const data = {
+    id: prompt("رقم التعريف الوظيفي:"),
+    name: prompt("الاسم الكامل:"),
+    diz: prompt("تاريخ الازدياد:"),
+    dtw: prompt("تاريخ التوظيف:"),
+    grade: prompt("الرتبة / الوظيفة:"),
+    place: prompt("مكان العمل:")
+  };
+
+  await setDoc(doc(db, "employeescom", id), data);
+  loadData();
+};
+
+/* ===== تعديل ===== */
+window.editEmp = async (docId) => {
+  const ref = doc(db, "employeescom", docId);
+
+  const data = {
+    id: prompt("رقم التعريف الوظيفي:"),
+    name: prompt("الاسم الكامل:"),
+    diz: prompt("تاريخ الازدياد:"),
+    dtw: prompt("تاريخ التوظيف:"),
+    grade: prompt("الرتبة / الوظيفة:"),
+    place: prompt("مكان العمل:")
+  };
+
+  await updateDoc(ref, data);
+  loadData();
+};
+
+/* ===== حذف ===== */
+window.delEmp = async (docId) => {
+  if (!confirm("هل أنت متأكد من الحذف؟")) return;
+  await deleteDoc(doc(db, "employeescom", docId));
+  loadData();
+};
+
+</script>
+
+</body>
+</html>

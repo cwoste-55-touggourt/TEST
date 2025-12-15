@@ -194,7 +194,25 @@ async function init() {
 
   try {
     const snap = await getDocs(collection(db, "employeescom"));
-    snap.forEach(docu => CACHE.set(docu.id, docu.data()));
+    // inspect date-like fields for suspicious values to help debugging
+    const isSuspiciousDate = v => {
+      if (!v && v !== 0) return false;
+      if (typeof v === 'object' && v !== null && typeof v.toDate !== 'function') {
+        // Firestore sometimes serializes to plain object with seconds/nanoseconds
+        if ('seconds' in v && 'nanoseconds' in v) return true;
+      }
+      if (typeof v === 'string' && isNaN(Date.parse(v))) return true;
+      if (typeof v === 'number' && !isFinite(v)) return true;
+      return false;
+    };
+
+    snap.forEach(docu => {
+      const data = docu.data();
+      if (isSuspiciousDate(data.diz) || isSuspiciousDate(data.dtw)) {
+        console.warn('Suspicious date in record', docu.id, { diz: data.diz, dtw: data.dtw });
+      }
+      CACHE.set(docu.id, data);
+    });
     render();
   } catch (err) {
     console.error('Failed to load data:', err);
@@ -221,16 +239,30 @@ function render() {
   const frag = document.createDocumentFragment();
   tbody.innerHTML = "";
 
+  // Safe fmt wrapper: catches unexpected errors in date formatting and logs offending record
+  const safeFmt = (val, id, field) => {
+    try {
+      return fmt(val);
+    } catch (err) {
+      console.error('fmt failed for record', { id, field, val, err });
+      return "";
+    }
+  };
+
   CACHE.forEach((d,id) => {
     const tr = document.createElement("tr");
-    tr.dataset.search = `${id} ${d.name} ${d.grade} ${d.place}`.toLowerCase();
+    // ensure string parts are defined
+    const nm = d && d.name ? d.name : "";
+    const gr = d && d.grade ? d.grade : "";
+    const pl = d && d.place ? d.place : "";
+    tr.dataset.search = `${id} ${nm} ${gr} ${pl}`.toLowerCase();
     tr.innerHTML = `
       <td>${id}</td>
-      <td>${d.name}</td>
-      <td>${fmt(d.diz)}</td>
-      <td>${fmt(d.dtw)}</td>
-      <td>${d.grade}</td>
-      <td>${d.place}</td>
+      <td>${nm}</td>
+      <td>${safeFmt(d && d.diz, id, 'diz')}</td>
+      <td>${safeFmt(d && d.dtw, id, 'dtw')}</td>
+      <td>${gr}</td>
+      <td>${pl}</td>
       <td class="actions">
         <button class="edit" onclick="openForm('${id}')">✏️</button>
         <button class="delete" onclick="removeEmp('${id}')">🗑️</button>

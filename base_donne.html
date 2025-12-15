@@ -5,6 +5,7 @@
 <title>قاعدة بيانات الموظفين</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
 body {
@@ -14,14 +15,33 @@ body {
   padding: 20px;
 }
 
+/* ===== Header ===== */
 header {
   display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
 }
 
 h2 { color: #0d47a1; margin: 0; }
+
+.stats {
+  background: #e3f2fd;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: bold;
+  color: #0d47a1;
+}
+
+input.search {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-family: Cairo;
+  width: 260px;
+}
 
 button {
   padding: 10px 14px;
@@ -36,13 +56,14 @@ button {
 .edit { background: #ffca28; }
 .delete { background: #ef5350; color: white; }
 
+/* ===== Table ===== */
 table {
   width: 100%;
   border-collapse: collapse;
   background: white;
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 6px 20px rgba(0,0,0,.1);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
 }
 
 th {
@@ -58,25 +79,62 @@ td {
 }
 
 tr:hover { background: #e3f2fd; }
+.actions button { margin: 2px; }
 
-.actions button {
-  margin: 2px;
+/* ===== Loading Overlay ===== */
+#loading {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.9);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.loader {
+  text-align: center;
+  color: #1976d2;
+  font-weight: bold;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid #e3f2fd;
+  border-top: 6px solid #1976d2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>
 </head>
 
 <body>
 
+<!-- Loading -->
+<div id="loading">
+  <div class="loader">
+    <div class="spinner"></div>
+    <p>جاري المعالجة...</p>
+  </div>
+</div>
+
 <header>
   <h2>قاعدة بيانات الموظفين</h2>
-  <button class="add" onclick="openAdd()">➕ إضافة موظف</button>
+  <div class="stats">👥 العدد الكلي: <span id="totalCount">0</span></div>
+  <input id="searchInput" class="search" placeholder="بحث...">
+  <button class="add" onclick="openForm()">➕ إضافة موظف</button>
 </header>
 
 <table>
 <thead>
 <tr>
   <th>رقم التعريف</th>
-  <th>رقم التعريف الوظيفي</th>
   <th>الاسم</th>
   <th>تاريخ الازدياد</th>
   <th>تاريخ التوظيف</th>
@@ -88,20 +146,15 @@ tr:hover { background: #e3f2fd; }
 <tbody id="tableBody"></tbody>
 </table>
 
-<!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
-  getFirestore,
-  collection,
-  getDocs,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  doc
+  getFirestore, collection, getDocs,
+  setDoc, updateDoc, deleteDoc,
+  doc, getDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* 🔥 إعدادات Firebase */
+/* Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyAkQz9pB2ZNlYIvdlTRvi4try3D8LLXS4g",
   authDomain: "databaseemploye.firebaseapp.com",
@@ -112,77 +165,139 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const tbody = document.getElementById("tableBody");
+const loading = document.getElementById("loading");
+const totalCount = document.getElementById("totalCount");
+
+/* ===== أدوات ===== */
+const showLoading = () => loading.style.display = "flex";
+const hideLoading = () => loading.style.display = "none";
+
+function formatDate(value) {
+  if (!value) return "";
+  if (value.seconds) value = new Date(value.seconds * 1000);
+  const d = new Date(value);
+  if (isNaN(d)) return value;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
 
 /* ===== تحميل البيانات ===== */
 async function loadData() {
+  showLoading();
   tbody.innerHTML = "";
   const snap = await getDocs(collection(db, "employeescom"));
+  totalCount.textContent = snap.size;
 
   snap.forEach(docu => {
     const d = docu.data();
     const tr = document.createElement("tr");
-
     tr.innerHTML = `
       <td>${docu.id}</td>
-      <td>${d.id || ""}</td>
-      <td>${d.name || ""}</td>
-      <td>${d.diz || ""}</td>
-      <td>${d.dtw || ""}</td>
-      <td>${d.grade || ""}</td>
-      <td>${d.place || ""}</td>
+      <td>${d.name}</td>
+      <td>${formatDate(d.diz)}</td>
+      <td>${formatDate(d.dtw)}</td>
+      <td>${d.grade}</td>
+      <td>${d.place}</td>
       <td class="actions">
-        <button class="edit" onclick="editEmp('${docu.id}')">✏️</button>
-        <button class="delete" onclick="delEmp('${docu.id}')">🗑️</button>
-      </td>
-    `;
+        <button class="edit" onclick="openForm('${docu.id}')">✏️</button>
+        <button class="delete" onclick="removeEmp('${docu.id}')">🗑️</button>
+      </td>`;
     tbody.appendChild(tr);
   });
+
+  hideLoading();
 }
 
 loadData();
 
-/* ===== إضافة ===== */
-window.openAdd = async () => {
-  const id = prompt("رقم التعريف (سيكون ID):");
-  if (!id) return;
+/* ===== البحث ===== */
+document.getElementById("searchInput").addEventListener("keyup", e => {
+  const v = e.target.value.toLowerCase();
+  document.querySelectorAll("#tableBody tr").forEach(tr => {
+    tr.style.display = tr.innerText.toLowerCase().includes(v) ? "" : "none";
+  });
+});
 
-  const data = {
-    id: prompt("رقم التعريف الوظيفي:"),
-    name: prompt("الاسم الكامل:"),
-    diz: prompt("تاريخ الازدياد:"),
-    dtw: prompt("تاريخ التوظيف:"),
-    grade: prompt("الرتبة / الوظيفة:"),
-    place: prompt("مكان العمل:")
-  };
+/* ===== استمارة ===== */
+window.openForm = async (id = null) => {
+  let data = { name:"", diz:"", dtw:"", grade:"", place:"" };
 
-  await setDoc(doc(db, "employeescom", id), data);
-  loadData();
-};
+  if (id) {
+    showLoading();
+    const snap = await getDoc(doc(db,"employeescom",id));
+    data = snap.data();
+    hideLoading();
+  }
 
-/* ===== تعديل ===== */
-window.editEmp = async (docId) => {
-  const ref = doc(db, "employeescom", docId);
+  const { value } = await Swal.fire({
+    title: id ? "تعديل موظف" : "إضافة موظف",
+    html: `
+      <input id="fid" class="swal2-input" placeholder="رقم التعريف (16 رقم)" ${id?"disabled":""} value="${id||""}">
+      <input id="fname" class="swal2-input" placeholder="الاسم الكامل" value="${data.name||""}">
+      <input id="fdiz" type="date" class="swal2-input" value="${formatDate(data.diz)}">
+      <input id="fdtw" type="date" class="swal2-input" value="${formatDate(data.dtw)}">
+      <input id="fgrade" class="swal2-input" placeholder="الرتبة" value="${data.grade||""}">
+      <input id="fplace" class="swal2-input" placeholder="مكان العمل" value="${data.place||""}">
+    `,
+    focusConfirm: false,
+    preConfirm: async () => {
+      const empId = fid.value.trim();
+      if (!id && !/^\d{16}$/.test(empId)) {
+        Swal.showValidationMessage("رقم التعريف يجب أن يكون 16 رقمًا");
+        return false;
+      }
+      if (!id) {
+        const exists = await getDoc(doc(db,"employeescom",empId));
+        if (exists.exists()) {
+          Swal.showValidationMessage("الموظف مسجل مسبقًا");
+          return false;
+        }
+      }
+      return {
+        empId,
+        name: fname.value,
+        diz: fdiz.value,
+        dtw: fdtw.value,
+        grade: fgrade.value,
+        place: fplace.value
+      };
+    }
+  });
 
-  const data = {
-    id: prompt("رقم التعريف الوظيفي:"),
-    name: prompt("الاسم الكامل:"),
-    diz: prompt("تاريخ الازدياد:"),
-    dtw: prompt("تاريخ التوظيف:"),
-    grade: prompt("الرتبة / الوظيفة:"),
-    place: prompt("مكان العمل:")
-  };
+  if (!value) return;
 
-  await updateDoc(ref, data);
-  loadData();
+  showLoading();
+
+  if (id) {
+    await updateDoc(doc(db,"employeescom",id), value);
+    Swal.fire("تم التعديل","تم تحديث البيانات بنجاح","success");
+  } else {
+    await setDoc(doc(db,"employeescom",value.empId), {
+      id: value.empId,
+      ...value
+    });
+    Swal.fire("تمت الإضافة","تم تسجيل الموظف بنجاح","success");
+  }
+
+  await loadData();
 };
 
 /* ===== حذف ===== */
-window.delEmp = async (docId) => {
-  if (!confirm("هل أنت متأكد من الحذف؟")) return;
-  await deleteDoc(doc(db, "employeescom", docId));
-  loadData();
-};
+window.removeEmp = async (id) => {
+  const ok = await Swal.fire({
+    icon: "warning",
+    title: "تأكيد الحذف",
+    showCancelButton: true,
+    confirmButtonText: "حذف",
+    cancelButtonText: "إلغاء"
+  });
 
+  if (!ok.isConfirmed) return;
+
+  showLoading();
+  await deleteDoc(doc(db,"employeescom",id));
+  Swal.fire("تم الحذف","تم حذف الموظف بنجاح","success");
+  await loadData();
+};
 </script>
 
 </body>
